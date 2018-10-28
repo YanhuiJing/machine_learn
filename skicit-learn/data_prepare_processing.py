@@ -125,21 +125,7 @@ def one_hot_encoder_usecase():
     print(enc.transform([[1, 0, 0]]).toarray())
 
 
-"""
-    将单个特征的多个离散变量转换为多个特征二维变量
-"""
-def dict_vectorizer():
-    dict01 = [
-        {"city": "a", "temperatire": 10},
-        {"city": "a", "temperatire": 10},
-        {"city": "b", "temperatire": 20},
-        {"city": "c", "temperatire": 30},
-    ]
 
-    vec = DictVectorizer()
-    print(vec.fit_transform(dict01).toarray())
-
-    print(vec.get_feature_names())
 
 
 if __name__ == '__main__':
