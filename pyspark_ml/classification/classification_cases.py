@@ -11,6 +11,7 @@ from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.clustering import KMeans
 
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+from pyspark.ml.evaluation import ClusteringEvaluator
 
 def getSparkSession():
     spark=SparkSession.builder.\
@@ -50,15 +51,19 @@ def logstic_regression_usecase():
         print(objective)
 
     # Obtain the receiver-operating characteristic as a dataframe and areaUnderROC.
+    # 获取roc假正率和召回率数据
     trainingSummary.roc.show()
+    # 获取roc曲线下方面积
     print("areaUnderROC: " + str(trainingSummary.areaUnderROC))
 
     # Set the model threshold to maximize F-Measure
+    # 获取不通过阈值下的调和平均数
     fMeasure = trainingSummary.fMeasureByThreshold
-    maxFMeasure = fMeasure.groupBy().max('F-Measure').select('max(F-Measure)').head()
-    bestThreshold = fMeasure.where(fMeasure['F-Measure'] == maxFMeasure['max(F-Measure)']) \
-        .select('threshold').head()['threshold']
-    mlr.setThreshold(bestThreshold)
+    fMeasure.show()
+    # maxFMeasure = fMeasure.groupBy().max('F-Measure').select('max(F-Measure)').head()
+    # bestThreshold = fMeasure.where(fMeasure['F-Measure'] == maxFMeasure['max(F-Measure)']) \
+    #     .select('threshold').head()['threshold']
+    # mlr.setThreshold(bestThreshold)
 
 
 def multi_logstic_regression_usecase():
@@ -69,7 +74,9 @@ def multi_logstic_regression_usecase():
     training = spark \
         .read \
         .format("libsvm") \
-        .load("../data/lib_svm.txt")
+        .load("../data/multi_classification.txt")
+
+    training.select("label").distinct().show()
 
     lr = LogisticRegression(maxIter=10, regParam=0.3, elasticNetParam=0.8,family="multinomial")
 
@@ -77,16 +84,19 @@ def multi_logstic_regression_usecase():
     lrModel = lr.fit(training)
 
     # Print the coefficients and intercept for multinomial logistic regression
+    # 打印权重参数和截距
     print("Coefficients: \n" + str(lrModel.coefficientMatrix))
     print("Intercept: " + str(lrModel.interceptVector))
 
     trainingSummary =lrModel.summary
 
     # Obtain the objective per iteration
+    # 获取模型训练历史数据
     objectiveHistory = trainingSummary.objectiveHistory
     print("objectiveHistory:")
     for objective in objectiveHistory:
         print(objective)
+
 
     # for multiclass, we can inspect metrics on a per-label basis
     print("False positive rate by label:")
@@ -232,5 +242,15 @@ def kmeans_usecase():
     model = kmeans.fit(train_features)
     predictions = model.transform(test_features)
 
+    evaluator = ClusteringEvaluator()
+    silhouette = evaluator.evaluate(predictions)
+    print("Silhouette with squared euclidean distance = " + str(silhouette))
+
+
+
 if __name__ == '__main__':
+
     kmeans_usecase()
+
+
+
